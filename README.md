@@ -52,12 +52,6 @@ Full-stack developer and software engineer passionate about building intelligent
 
 ---
 
-## 🎬 Demo Video Link
-
-[https://youtu.be/eTll7EdQyY8](https://youtu.be/eTll7EdQyY8)
-
----
-
 ## 🤖 AI Agents
 
 Six specialized agents work together to create comprehensive travel plans:
