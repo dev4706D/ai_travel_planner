@@ -44,14 +44,6 @@ Make travel planning effortless and personal. No stress, no endless research—j
 
 ---
 
-## 👥 About
-
-**Built by**: Amit Wani [@mtwn105](https://github.com/mtwn105)
-
-Full-stack developer and software engineer passionate about building intelligent systems that solve real-world problems. TripCraft AI represents the intersection of advanced AI capabilities and practical travel planning needs.
-
----
-
 ## 🤖 AI Agents
 
 Six specialized agents work together to create comprehensive travel plans:
