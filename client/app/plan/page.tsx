@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useForm } from "react-hook-form";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
+import { motion, AnimatePresence } from "framer-motion";
 import { authClient } from "@/lib/auth-client";
 import {
   Card,
@@ -55,7 +56,6 @@ import {
   Star,
   ChevronRight,
   ChevronLeft,
-  Luggage,
   Sparkles,
   Edit3,
   Lightbulb,
@@ -142,25 +142,27 @@ const NumberInput = ({
   };
 
   return (
-    <div className={`flex items-center border rounded-md ${className}`}>
+    <div
+      className={`flex items-center rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-1 border border-slate-200 dark:border-slate-700/80 shadow-xs ${className}`}
+    >
       <Button
         type="button"
         variant="ghost"
         size="sm"
-        className="h-12 px-3 rounded-r-none border-r"
+        className="h-10 w-10 p-0 rounded-xl hover:bg-white dark:hover:bg-slate-700 hover:shadow-xs transition-all text-slate-700 dark:text-slate-200"
         onClick={decrement}
         disabled={value <= min}
       >
         <Minus className="w-4 h-4" />
       </Button>
-      <div className="flex-1 h-12 flex items-center justify-center bg-background text-center font-medium text-base min-w-[60px]">
+      <div className="flex-1 h-10 flex items-center justify-center text-center font-bold text-base min-w-[50px] text-foreground">
         {value}
       </div>
       <Button
         type="button"
         variant="ghost"
         size="sm"
-        className="h-12 px-3 rounded-l-none border-l"
+        className="h-10 w-10 p-0 rounded-xl hover:bg-white dark:hover:bg-slate-700 hover:shadow-xs transition-all text-blue-600 dark:text-blue-400"
         onClick={increment}
         disabled={value >= max}
       >
@@ -213,7 +215,7 @@ interface TripFormData {
   additionalInfo?: string;
 }
 
-export default function Plan() {
+function PlanForm() {
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedVibes, setSelectedVibes] = useState<string[]>([]);
   const [selectedPriorities, setSelectedPriorities] = useState<string[]>([]);
@@ -253,6 +255,16 @@ export default function Plan() {
       },
     },
   });
+
+  const searchParams = useSearchParams();
+  const destQuery = searchParams.get("dest");
+
+  // Prefill destination if query param exists
+  useEffect(() => {
+    if (destQuery && !form.getValues("destination")) {
+      form.setValue("destination", destQuery);
+    }
+  }, [destQuery, form]);
 
   // Prefill user name when session data is available
   useEffect(() => {
@@ -484,40 +496,57 @@ export default function Plan() {
   };
 
   return (
-    <div className="min-h-screen bg-background py-8 px-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-background py-10 px-4 sm:px-6">
+      <div className="max-w-4xl mx-auto space-y-8">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-4 flex items-center justify-center gap-3">
-            <Luggage className="w-8 h-8 text-primary" />
-            Plan Your Perfect Trip
+        <div className="text-center space-y-3">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200/80 dark:border-blue-800/80 text-blue-700 dark:text-blue-300 text-xs font-semibold shadow-xs">
+            <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+            <span>Autonomous Trip Builder</span>
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight flex items-center justify-center gap-3">
+            Craft Your Custom Journey
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Tell us about your dream destination and we&apos;ll craft the
-            perfect itinerary just for you
+          <p className="text-sm sm:text-base text-muted-foreground max-w-xl mx-auto">
+            Our multi-agent team uses your exact preferences to assemble flights, accommodations, hidden gems, and daily rhythms.
           </p>
         </div>
 
         {/* Progress Indicator */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+        <div className="space-y-4">
+          {/* Desktop step chain */}
+          <div className="hidden lg:flex items-center justify-between relative px-4">
+            <div className="absolute top-5 left-10 right-10 h-0.5 bg-slate-200 dark:bg-slate-800 -z-0" />
+            <div
+              className="absolute top-5 left-10 h-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 transition-all duration-500 -z-0"
+              style={{
+                width: `${Math.min(92, Math.max(0, (currentStep / (steps.length - 1)) * 88))}%`,
+              }}
+            />
+
             {steps.map((step, index) => {
               const StepIcon = step.icon;
+              const isPassed = index < currentStep;
+              const isCurrent = index === currentStep;
               return (
-                <div key={step.id} className="flex flex-col items-center">
+                <div key={step.id} className="flex flex-col items-center relative z-10">
                   <div
-                    className={`w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
-                      index <= currentStep
-                        ? "bg-primary border-primary text-primary-foreground"
-                        : "bg-background border-border text-muted-foreground"
+                    className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all duration-300 ${
+                      isCurrent
+                        ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30 scale-110 ring-4 ring-blue-100 dark:ring-blue-950/60 font-bold"
+                        : isPassed
+                        ? "bg-emerald-500 text-white shadow-xs"
+                        : "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-muted-foreground"
                     }`}
                   >
                     <StepIcon className="w-5 h-5" />
                   </div>
                   <span
-                    className={`text-xs mt-2 font-medium ${
-                      index <= currentStep
-                        ? "text-primary"
+                    className={`text-[11px] mt-2 font-semibold transition-colors ${
+                      isCurrent
+                        ? "text-blue-600 dark:text-blue-400 font-bold"
+                        : isPassed
+                        ? "text-emerald-600 dark:text-emerald-400"
                         : "text-muted-foreground"
                     }`}
                   >
@@ -527,19 +556,32 @@ export default function Plan() {
               );
             })}
           </div>
-          <div className="w-full bg-muted rounded-full h-2">
-            <div
-              className="bg-primary h-2 rounded-full transition-all duration-500"
-              style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
-            />
+
+          {/* Mobile & Tablet Stepper */}
+          <div className="lg:hidden bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+            <div className="flex items-center justify-between text-xs font-semibold mb-2">
+              <span className="text-blue-600 dark:text-blue-400 flex items-center gap-1.5 font-bold">
+                {React.createElement(steps[currentStep].icon, { className: "w-4 h-4" })}
+                Step {currentStep + 1} of {steps.length}: {steps[currentStep].title}
+              </span>
+              <span className="text-muted-foreground">
+                {Math.round(((currentStep + 1) / steps.length) * 100)}%
+              </span>
+            </div>
+            <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
+              <div
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 h-2 rounded-full transition-all duration-500"
+                style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
+              />
+            </div>
           </div>
         </div>
 
         {/* Validation Error */}
         {validationError && (
-          <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-destructive" />
-            <span className="text-destructive font-medium">
+          <div className="p-4 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900/60 rounded-2xl flex items-center gap-3 animate-in fade-in duration-200">
+            <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+            <span className="text-red-700 dark:text-red-300 font-medium text-sm">
               {validationError}
             </span>
           </div>
@@ -547,20 +589,39 @@ export default function Plan() {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <Card className="shadow-lg border">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-3 text-2xl">
-                  {React.createElement(steps[currentStep].icon, {
-                    className: "w-6 h-6 text-primary",
-                  })}
-                  {steps[currentStep].title}
-                </CardTitle>
-                <CardDescription className="text-base">
-                  {steps[currentStep].description}
-                </CardDescription>
+            <Card className="rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md overflow-hidden">
+              <CardHeader className="pb-6 bg-gradient-to-r from-slate-50/80 via-white to-blue-50/40 dark:from-slate-900 dark:via-slate-900 dark:to-blue-950/20 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20">
+                      {React.createElement(steps[currentStep].icon, {
+                        className: "w-6 h-6",
+                      })}
+                    </div>
+                    <div>
+                      <CardTitle className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+                        {steps[currentStep].title}
+                      </CardTitle>
+                      <CardDescription className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                        {steps[currentStep].description}
+                      </CardDescription>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="hidden sm:inline-flex text-xs font-semibold px-3 py-1 bg-white dark:bg-slate-800">
+                    Step {currentStep + 1} of {steps.length}
+                  </Badge>
+                </div>
               </CardHeader>
 
-              <CardContent className="space-y-6">
+              <CardContent className="p-6 sm:p-8">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={currentStep}
+                    initial={{ opacity: 0, x: 18 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -18 }}
+                    transition={{ duration: 0.25 }}
+                  >
                 {/* Step 0: Trip Basics */}
                 {currentStep === 0 && (
                   <div className="space-y-6">
@@ -1496,75 +1557,136 @@ export default function Plan() {
                     />
                   </div>
                 )}
-              </CardContent>
-            </Card>
+                    </motion.div>
+                  </AnimatePresence>
+                </CardContent>
+              </Card>
 
-            {/* Submission Message */}
-            {submitMessage && (
-              <div
-                className={`p-4 rounded-lg border text-center font-medium ${
-                  submitMessage.includes("🎉")
-                    ? "bg-green-50 border-green-200 text-green-800"
-                    : "bg-red-50 border-red-200 text-red-800"
-                }`}
-              >
-                {submitMessage}
-              </div>
-            )}
-
-            {/* Navigation */}
-            <div className="flex justify-between items-center">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={prevStep}
-                disabled={currentStep === 0 || isSubmitting}
-                className="h-12 px-6"
-              >
-                <ChevronLeft className="w-4 h-4 mr-2" />
-                Previous
-              </Button>
-
-              <span className="text-sm text-muted-foreground">
-                Step {currentStep + 1} of {steps.length}
-              </span>
-
-              {currentStep === steps.length - 1 ? (
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="h-12 px-8"
+              {/* Submitting Multi-Agent Orchestration Card */}
+              {isSubmitting && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="p-6 rounded-3xl bg-blue-50/90 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 shadow-xl space-y-4"
                 >
-                  {isSubmitting ? (
-                    <>
-                      <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-background border-t-transparent" />
-                      Creating Trip...
-                    </>
-                  ) : (
-                    <>
-                      <Star className="w-4 h-4 mr-2" />
-                      Create My Trip
-                    </>
-                  )}
-                </Button>
-              ) : (
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center animate-spin" style={{ animationDuration: "3s" }}>
+                      <Sparkles className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-foreground text-sm">
+                        AI Agent Team Assembling Your Journey
+                      </h4>
+                      <p className="text-xs text-muted-foreground">
+                        Coordinating flights, boutique stays, curated POIs, and logistics...
+                      </p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-xs">
+                    <div className="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-blue-100 dark:border-blue-900 flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-blue-500 animate-ping" />
+                      <span className="font-medium text-foreground truncate">Flight Scout</span>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-blue-100 dark:border-blue-900 flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
+                      <span className="font-medium text-foreground truncate">Hotel Concierge</span>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-blue-100 dark:border-blue-900 flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                      <span className="font-medium text-foreground truncate">Local Insider</span>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-blue-100 dark:border-blue-900 flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-purple-500 animate-ping" />
+                      <span className="font-medium text-foreground truncate">Pacing Optimizer</span>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Submission Message */}
+              {submitMessage && (
+                <div
+                  className={`p-4 rounded-2xl border text-center font-semibold text-sm ${
+                    submitMessage.includes("🎉")
+                      ? "bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/60 dark:border-emerald-800 dark:text-emerald-300"
+                      : "bg-red-50 border-red-200 text-red-800 dark:bg-red-950/60 dark:border-red-800 dark:text-red-300"
+                  }`}
+                >
+                  {submitMessage}
+                </div>
+              )}
+
+              {/* Navigation */}
+              <div className="flex justify-between items-center pt-2">
                 <Button
                   type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    nextStep(e);
-                  }}
-                  disabled={isSubmitting}
-                  className="h-12 px-6"
+                  variant="outline"
+                  onClick={prevStep}
+                  disabled={currentStep === 0 || isSubmitting}
+                  className="h-12 px-6 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
                 >
-                  Next
-                  <ChevronRight className="w-4 h-4 ml-2" />
+                  <ChevronLeft className="w-4 h-4 mr-2" />
+                  Previous
                 </Button>
-              )}
-            </div>
-          </form>
-        </Form>
+
+                <span className="text-xs font-semibold text-muted-foreground bg-slate-100 dark:bg-slate-800 px-3.5 py-1.5 rounded-full">
+                  Step {currentStep + 1} of {steps.length}
+                </span>
+
+                {currentStep === steps.length - 1 ? (
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="h-12 px-8 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 font-bold transition-all hover:scale-105"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                        Orchestrating...
+                      </>
+                    ) : (
+                      <>
+                        <Star className="w-4 h-4 mr-2 text-amber-300 fill-amber-300" />
+                        Craft My Itinerary
+                      </>
+                    )}
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      nextStep(e);
+                    }}
+                    disabled={isSubmitting}
+                    className="h-12 px-7 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20 font-semibold transition-all hover:scale-105"
+                  >
+                    Next
+                    <ChevronRight className="w-4 h-4 ml-1.5" />
+                  </Button>
+                )}
+              </div>
+            </form>
+          </Form>
+        </div>
       </div>
-    </div>
   );
 }
+
+export default function Plan() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="text-center space-y-3">
+            <div className="w-10 h-10 mx-auto rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
+            <p className="text-sm font-medium text-muted-foreground">Loading TripCraft Wizard...</p>
+          </div>
+        </div>
+      }
+    >
+      <PlanForm />
+    </Suspense>
+  );
+}
+

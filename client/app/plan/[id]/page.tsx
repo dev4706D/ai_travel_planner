@@ -31,6 +31,13 @@ import {
   Lightbulb,
   Utensils,
   Receipt,
+  Sparkles,
+  CheckCircle2,
+  ExternalLink,
+  Bot,
+  RefreshCw,
+  Compass,
+  Star,
 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -38,6 +45,9 @@ import { useParams } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
+import confetti from "canvas-confetti";
+import { motion, AnimatePresence } from "framer-motion";
+
 
 // Type Definitions
 interface DayPlan {
@@ -411,6 +421,22 @@ export default function TripDetailsPage() {
     }
   }, [trip, trip?.status, tripId, fetchTripDetails]);
 
+  // Trigger celebration confetti when plan completes!
+  useEffect(() => {
+    if (trip?.status === "completed") {
+      try {
+        confetti({
+          particleCount: 90,
+          spread: 75,
+          origin: { y: 0.6 },
+          colors: ["#2563eb", "#3b82f6", "#f97316", "#10b981", "#8b5cf6"],
+        });
+      } catch {
+        // fallback if canvas not available
+      }
+    }
+  }, [trip?.status]);
+
   // Render loading state
   if (loading && !trip) {
     return (
@@ -733,82 +759,121 @@ export default function TripDetailsPage() {
         )}
       </section>
 
-      {/* Show loading message or itinerary based on status */}
+      {/* Multi-Agent In-Progress / Pending / Failed Mission Control Screen */}
       {(trip.status === "pending" ||
         trip.status === "in-progress" ||
         trip.status === "failed") && (
-        <div className="text-center py-10 border rounded-lg">
-          <Info size={48} className="text-muted-foreground mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">
-            {trip.status === "pending" && "Trip Plan in Progress"}
-            {trip.status === "in-progress" && "Trip Plan is Being Generated"}
-            {trip.status === "failed" && "Failed to Generate Trip Plan"}
-          </h2>
-          <p className="text-muted-foreground">
-            {trip.status === "pending" &&
-              "Your trip itinerary is currently being planned. Please wait as we create your personalized travel plan."}
-            {trip.status === "in-progress" &&
-              "We are working on your trip details. This might take a few moments. The page will automatically update when your plan is ready."}
-            {trip.status === "failed" &&
-              "Something went wrong while generating your trip plan. Please try again or contact support."}
-          </p>
-
-          {/* Show current step when available */}
-          {(trip.status === "pending" || trip.status === "in-progress") &&
-            trip.current_step && (
-              <div className="mt-4 bg-muted/30 p-4 rounded-lg max-w-md mx-auto">
-                <h3 className="font-medium text-sm mb-1">Current Progress:</h3>
-                <p className="text-primary font-medium">{trip.current_step}</p>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center py-12 px-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xl max-w-2xl mx-auto space-y-6"
+        >
+          {trip.status === "failed" ? (
+            <div className="w-16 h-16 rounded-3xl bg-red-50 dark:bg-red-950/50 border border-red-200 text-red-600 flex items-center justify-center mx-auto shadow-sm">
+              <Info className="w-8 h-8" />
+            </div>
+          ) : (
+            <div className="relative w-20 h-20 mx-auto">
+              <div className="absolute inset-0 rounded-3xl bg-blue-600/10 dark:bg-blue-400/10 animate-ping" />
+              <div className="relative w-full h-full rounded-3xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-amber-500 p-0.5 shadow-lg shadow-blue-500/20">
+                <div className="w-full h-full bg-white dark:bg-slate-900 rounded-[22px] flex items-center justify-center">
+                  <Bot className="w-9 h-9 text-blue-600 animate-bounce" />
+                </div>
               </div>
-            )}
+            </div>
+          )}
 
+          <div className="space-y-2">
+            <h2 className="text-2xl font-extrabold text-foreground tracking-tight">
+              {trip.status === "pending" && "AI Agents Preparing Your Plan"}
+              {trip.status === "in-progress" && "Multi-Agent System Generating Itinerary"}
+              {trip.status === "failed" && "Failed to Generate Trip Plan"}
+            </h2>
+            <p className="text-sm text-muted-foreground max-w-lg mx-auto leading-relaxed">
+              {trip.status === "pending" &&
+                "Your travel preferences have been dispatched to our agent team. They are starting background scans."}
+              {trip.status === "in-progress" &&
+                "Our autonomous flight, hotel, and local guide agents are actively researching and cross-verifying recommendations."}
+              {trip.status === "failed" &&
+                "An unexpected issue occurred while synthesizing the agent responses. Please retry below."}
+            </p>
+          </div>
+
+          {/* Current Step Badge */}
           {(trip.status === "pending" || trip.status === "in-progress") && (
-            <div className="flex justify-center mt-4">
-              <div className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Updating automatically...
+            <div className="p-4 rounded-2xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/60 max-w-md mx-auto text-left space-y-2">
+              <div className="flex items-center justify-between text-xs font-semibold text-blue-700 dark:text-blue-300">
+                <span className="flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 animate-spin" />
+                  Live Agent Deliberation
+                </span>
+                <span className="flex items-center gap-1 text-[11px] text-muted-foreground font-normal">
+                  <Loader2 className="w-3 h-3 animate-spin" /> Auto-syncing
+                </span>
+              </div>
+              <p className="text-xs text-foreground font-medium bg-white/80 dark:bg-slate-900/80 p-2.5 rounded-xl border border-blue-200/50">
+                {trip.current_step || "Searching optimal routes, vetted accommodations, and attractions..."}
+              </p>
+            </div>
+          )}
+
+          {/* 4 Agent Status indicators */}
+          {(trip.status === "pending" || trip.status === "in-progress") && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs text-left pt-2">
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                  <span className="font-bold text-foreground text-[11px]">Flight Agent</span>
+                </div>
+                <span className="text-[10px] text-muted-foreground">Scouting routes</span>
+              </div>
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                  <span className="font-bold text-foreground text-[11px]">Hotel Scout</span>
+                </div>
+                <span className="text-[10px] text-muted-foreground">Filtering stays</span>
+              </div>
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="font-bold text-foreground text-[11px]">Insider POIs</span>
+                </div>
+                <span className="text-[10px] text-muted-foreground">Mapping gems</span>
+              </div>
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
+                  <span className="font-bold text-foreground text-[11px]">Pacing & Cost</span>
+                </div>
+                <span className="text-[10px] text-muted-foreground">Balancing schedule</span>
               </div>
             </div>
           )}
 
           {/* Add retry button for failed plans */}
           {trip.status === "failed" && (
-            <div className="flex justify-center mt-6">
-              <button
+            <div className="flex justify-center pt-2">
+              <Button
                 onClick={retryTripPlan}
                 disabled={retryLoading}
-                className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2 rounded-md hover:bg-primary/90 transition-colors"
+                className="rounded-2xl px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold"
               >
                 {retryLoading ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Retrying...
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Retrying Pipeline...
                   </>
                 ) : (
                   <>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M21 2v6h-6"></path>
-                      <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
-                      <path d="M3 22v-6h6"></path>
-                      <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
-                    </svg>
+                    <RefreshCw className="h-4 w-4 mr-2" />
                     Retry Plan Generation
                   </>
                 )}
-              </button>
+              </Button>
             </div>
           )}
-        </div>
+        </motion.div>
       )}
 
       {/* Show tabbed content when completed */}
